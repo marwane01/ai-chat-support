@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+pydantic>=2
+sqlalchemy
+sqlmodel
+psycopg[binary]
+qdrant-client
+sentence-transformers
+langgraph
+langchain-text-splitters
+tenacity
+python-dotenv
+pytest

@@ -1,0 +1,40 @@
+services:
+  app:
+    build:
+      context: .
+    env_file: .env
+    depends_on:
+      - postgres
+      - qdrant
+    ports:
+      - "8000:8000"
+
+  postgres:
+    image: postgres:16
+    container_name: chatbi-postgres
+    environment:
+      POSTGRES_DB: chatbi
+      POSTGRES_USER: chatbi
+      POSTGRES_PASSWORD: chatbi
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U chatbi -d chatbi" ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: chatbi-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+
+volumes:
+  pgdata:
+  qdrant_storage:

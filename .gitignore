@@ -1,0 +1,40 @@
+@'
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.venv/
+.env
+.env.* 
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Editors/OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Build/Dist
+build/
+dist/
+*.log
+
+# Docker
+*.pid
+
+# Data (keep schema & small samples; ignore bulky raw files)
+data/*.csv
+data/*.json
+data/*.jsonl
+!data/db_schema.sql
+!data/*sample*.jsonl
+!data/*sample*.json
+'@ | Set-Content .gitignore -Encoding UTF8
