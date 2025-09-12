@@ -6,8 +6,12 @@ sqlmodel
 psycopg[binary]
 qdrant-client
 sentence-transformers
+torch
 langgraph
 langchain-text-splitters
 tenacity
 python-dotenv
 pytest
+prometheus-client
+redis
+psycopg2-binary

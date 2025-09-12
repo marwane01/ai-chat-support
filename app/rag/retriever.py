@@ -3,8 +3,9 @@ import os
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Filter, FieldCondition, MatchValue
 from .embed import embed_texts
+from .reranker import rerank
 
-COLL = "faqs_v1"  # <- MUST match what you indexed
+COLL = "faqs_v1"  # <- MUST match what you indexed in Qdrant
 
 
 def retrieve(
@@ -12,8 +13,7 @@ def retrieve(
 ):
     client = QdrantClient(
         url=os.getenv("QDRANT_URL", "http://qdrant:6333"),
-        prefer_grpc=True,
-        grpc_port=6334,
+        prefer_grpc=False,   # <-- must be False
         timeout=30.0,
     )
     vec = embed_texts([query])[0]
@@ -32,8 +32,7 @@ def retrieve(
         res = client.search(
             collection_name=COLL, query_vector=vec, limit=topk, query_filter=qfilter
         )
-    except Exception as e:
-        # log this in real code; for now just fail-soft
+    except Exception:
         return []
 
     hits = []
@@ -47,4 +46,6 @@ def retrieve(
                 "meta": {k: payload.get(k) for k in ("id", "category", "city", "lang")},
             }
         )
-    return hits
+
+    # Phase 3: rerank results before returning
+    return rerank(query, hits, topk=topk)

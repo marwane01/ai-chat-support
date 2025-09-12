@@ -6,8 +6,12 @@ services:
     depends_on:
       - postgres
       - qdrant
+      - redis # ← keep only these
     ports:
       - "8000:8000"
+    volumes:
+      - ./data:/app/data # <-- add this
+    command: [ "uvicorn", "app.api.server:app", "--host", "0.0.0.0", "--port", "8000", "--no-server-header", "--proxy-headers" ]
 
   postgres:
     image: postgres:16
@@ -35,6 +39,41 @@ services:
     volumes:
       - qdrant_storage:/qdrant/storage
 
+  redis:
+    image: redis:7-alpine
+    container_name: chatbi-redis
+    ports:
+      - "6379:6379"
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: chatbi-prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--web.enable-lifecycle"
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./ops/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    # optional: can remove this; it's one-way so no cycle
+    depends_on:
+      - app
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: chatbi-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    depends_on:
+      - prometheus
+
 volumes:
   pgdata:
   qdrant_storage:
+  grafana-storage:
