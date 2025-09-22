@@ -15,3 +15,6 @@ pytest
 prometheus-client
 redis
 psycopg2-binary
+langdetect>=1.0.9
+orjson>=3.9.15
+

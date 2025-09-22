@@ -1,11 +1,9 @@
 import requests
 
 
-def test_faq_checkin():
-    r = requests.post(
-        "http://localhost:8000/chat", json={"message": "what is the check-in time?"}
-    )
-    j = r.json()
-    assert j["intent"] == "faq"
-    assert j["citations"] is not None
-    assert len(j["citations"]) > 0
+def test_it_localizes_answer(client):
+    r = client.post(
+        "/chat", json={"message": "Quali sono gli orari di check-in?"}
+    ).json()
+    assert "check-in" in r["reply"].lower()
+    assert any(c.get("meta", {}).get("collection") == "faqs_v2" for c in r["citations"])

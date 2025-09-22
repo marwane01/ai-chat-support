@@ -4,13 +4,18 @@ services:
       context: .
     env_file: .env
     depends_on:
-      - postgres
-      - qdrant
-      - redis # ← keep only these
+      postgres:
+        condition: service_started
+      qdrant:
+        condition: service_started
+      redis:
+        condition: service_started
+      ollama:
+        condition: service_started
     ports:
       - "8000:8000"
     volumes:
-      - ./data:/app/data # <-- add this
+      - ./data:/app/data
     command: [ "uvicorn", "app.api.server:app", "--host", "0.0.0.0", "--port", "8000", "--no-server-header", "--proxy-headers" ]
 
   postgres:
@@ -45,6 +50,23 @@ services:
     ports:
       - "6379:6379"
 
+  # NEW: local LLM via Ollama
+  ollama:
+    image: ollama/ollama:latest
+    container_name: chatbi-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434 # ensure it listens on all interfaces
+    volumes:
+      - ollama:/root/.ollama
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://127.0.0.1:11434/v1/models" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   prometheus:
     image: prom/prometheus:latest
     container_name: chatbi-prometheus
@@ -55,9 +77,9 @@ services:
       - "9090:9090"
     volumes:
       - ./ops/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    # optional: can remove this; it's one-way so no cycle
     depends_on:
-      - app
+      app:
+        condition: service_started
 
   grafana:
     image: grafana/grafana:latest
@@ -71,9 +93,11 @@ services:
     volumes:
       - grafana-storage:/var/lib/grafana
     depends_on:
-      - prometheus
+      prometheus:
+        condition: service_started
 
 volumes:
   pgdata:
   qdrant_storage:
   grafana-storage:
+  ollama:

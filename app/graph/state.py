@@ -15,8 +15,14 @@ class GraphState(BaseModel):
     # Text seen by generators/tools (redacted/safe)
     user_text: str
 
+    # ISO 639-1 language code (e.g., 'it', 'en', 'fr')
+    lang: Optional[str] = None
+
     # Raw text for routing only (optional; use carefully)
     user_text_raw: Optional[str] = None
+
+    # short chat memory: [{"role":"user"/"assistant", "content":"..."}]
+    history: Optional[List[Dict[str, str]]] = None
 
     # High-level intent for routing
     intent: Optional[Literal["rooms", "faq", "unknown"]] = None

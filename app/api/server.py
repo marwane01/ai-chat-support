@@ -1,9 +1,10 @@
-# app/api/server.py
 from typing import Any, Optional
 import os
 import time
+from datetime import date
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, APIRouter, HTTPException
+from fastapi.responses import ORJSONResponse
 from pydantic import BaseModel
 from prometheus_client import Counter, Histogram, make_asgi_app
 
@@ -11,19 +12,110 @@ from ..graph.graph import build_graph
 from ..graph.state import GraphState
 from ..db import init_db
 from ..utils.pii import scrub_in, scrub_out, redact
-from ..utils.memory import get_slots, update_slots
+from ..utils.memory import get_slots, update_slots, get_history, append_history
+from ..utils.lang import detect_lang
+
 
 # --- Feature flags ---
 GUARDRAILS_ON = os.getenv("GUARDRAILS", "on") == "on"
 MEMORY_ON = os.getenv("PHASE3_MEMORY", "off") == "on"
 OBS_ON = os.getenv("OBS_ON", "on") == "on"  # turn off if metrics cause issues
 
-# --- Metrics (safe to call behind OBS_ON) ---
+# --- Metrics ---
 requests_total = Counter("chat_requests_total", "Total chat requests")
 latency_seconds = Histogram("chat_request_latency_seconds", "Chat request latency")
 
-app = FastAPI(title="Chatbi")
+# Booking metrics (optional)
+booking_hold_ok = Counter("booking_hold_ok_total", "Successful booking hold requests")
+booking_hold_fail = Counter("booking_hold_fail_total", "Failed booking hold requests")
+
+# --- FastAPI App Setup ---
+app = FastAPI(title="Chatbi", default_response_class=ORJSONResponse)
+
+
 workflow = build_graph()
+
+# --- Booking imports ---
+from app.repositories.booking_repo_pg import (
+    create_hold_pg,
+    confirm_hold_pg,
+    cancel_booking_pg,
+    get_booking_pg,
+    expire_holds_pg,
+)
+from app.utils.schemas import BookingRequest, ConfirmRequest, CancelRequest
+
+
+# Router for booking
+router = APIRouter()
+
+
+def _parse_iso_date(s: str, field: str) -> date:
+    try:
+        return date.fromisoformat(s)
+    except Exception:
+        raise HTTPException(
+            status_code=400, detail=f"{field} must be ISO date YYYY-MM-DD"
+        )
+
+
+@router.post("/booking/hold")
+async def create_booking_hold(req: BookingRequest):
+    try:
+        check_in = _parse_iso_date(req.check_in, "check_in")
+        check_out = _parse_iso_date(req.check_out, "check_out")
+
+        booking_id = create_hold_pg(
+            hotel_id=req.hotel_id,
+            room_type=req.room_type,
+            check_in=check_in,
+            check_out=check_out,
+            contact_name=req.contact.name,
+            contact_phone=req.contact.phone,
+        )
+        booking_hold_ok.inc()
+        return {"booking_id": booking_id, "status": "hold"}
+    except HTTPException as e:
+        booking_hold_fail.inc()
+        raise e
+    except Exception as e:
+        booking_hold_fail.inc()
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/booking/{booking_id}")
+async def get_booking(booking_id: str):
+    row = get_booking_pg(booking_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Not found")
+    return row
+
+
+@router.post("/booking/confirm")
+async def confirm_booking(req: ConfirmRequest):
+    # no payment_ref in your schema; confirm by id only
+    confirm_hold_pg(req.booking_id)
+    return {"booking_id": req.booking_id, "status": "confirmed"}
+
+
+@router.post("/booking/cancel")
+async def cancel_booking(req: CancelRequest):
+    cancel_booking_pg(req.booking_id)
+    return {"booking_id": req.booking_id, "status": "cancelled"}
+
+
+@router.post("/booking/expire")
+async def expire_holds(request: Request):
+    if request.headers.get("X-Admin-Key") != os.getenv("ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="forbidden")
+    return {"released": expire_holds_pg()}
+
+
+# Include the booking router in the FastAPI app
+app.include_router(router)
+
+
+# --- Existing Chatbot Logic ---
 
 
 class ChatRequest(BaseModel):
@@ -39,7 +131,7 @@ class ChatResponse(BaseModel):
 
 @app.on_event("startup")
 def on_start() -> None:
-    # initialize DB connections, etc.
+    # Initialize DB connections, etc.
     init_db()
 
 
@@ -66,7 +158,7 @@ async def chat(req: ChatRequest, request: Request) -> ChatResponse:
 
         # 1) Load remembered slots
         slots = get_slots(session_id) if MEMORY_ON else {}
-
+        history = get_history(session_id) if MEMORY_ON else []
         # 2) Guardrails: detect & redact PII
         raw_text = req.message
         redacted_text, has_pii = (scrub_in(raw_text), False)
@@ -82,11 +174,12 @@ async def chat(req: ChatRequest, request: Request) -> ChatResponse:
             )
 
         # 3) Build initial state (seed with memory)
-        #    - user_text: safe/redacted (for LLM/tools)
-        #    - user_text_raw: original (so router can use it if needed)
+        detected_lang = detect_lang(req.message)
         state = GraphState(
             user_text=redacted_text,
             user_text_raw=raw_text,
+            lang=detected_lang,
+            history=history,
             city=slots.get("city"),
             budget=slots.get("budget"),
             occupancy=slots.get("occupancy"),
@@ -138,6 +231,13 @@ async def chat(req: ChatRequest, request: Request) -> ChatResponse:
                 check_in=check_in,
                 check_out=check_out,
             )
+
+            # Append both user and assistant turns
+            try:
+                append_history(session_id, "user", raw_text)
+                append_history(session_id, "assistant", reply)
+            except Exception:
+                pass
 
         return ChatResponse(
             reply=reply or "Sorry, I couldn’t find an answer.",
