@@ -34,10 +34,14 @@ def ensure_collection(client: QdrantClient, coll: str, dim: int):
 
 def main():
     parser = argparse.ArgumentParser(description="Index FAQs into Qdrant")
-    parser.add_argument("--input", default=os.getenv("FAQ_PATH", "/app/data/faqs.jsonl"))
+    parser.add_argument(
+        "--input", default=os.getenv("FAQ_PATH", "/app/data/faqs.jsonl")
+    )
     parser.add_argument("--collection", default=os.getenv("COLL", "faqs_v1"))
     parser.add_argument("--batch", type=int, default=128)
-    parser.add_argument("--qdrant", default=os.getenv("QDRANT_URL", "http://qdrant:6333"))
+    parser.add_argument(
+        "--qdrant", default=os.getenv("QDRANT_URL", "http://qdrant:6333")
+    )
     args = parser.parse_args()
 
     input_path = args.input

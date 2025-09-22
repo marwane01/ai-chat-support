@@ -2,16 +2,21 @@ import re
 from .state import GraphState
 
 # --- intent keywords ---
-ROOMS_KW = re.compile(r"\b(room|rooms|book|price|rate|option|deal|availability)\b", re.I)
-FAQ_KW   = re.compile(r"\b(check[- ]?in|policy|refund|breakfast|parking|wifi|faq|question)\b", re.I)
+ROOMS_KW = re.compile(
+    r"\b(room|rooms|book|price|rate|option|deal|availability)\b", re.I
+)
+FAQ_KW = re.compile(
+    r"\b(check[- ]?in|policy|refund|breakfast|parking|wifi|faq|question)\b", re.I
+)
 
 # --- slot extractors ---
-CITY_RE  = re.compile(
+CITY_RE = re.compile(
     r"\b(?:in|at)\s+([A-Za-z][A-Za-z\s\-]+?)(?=\s+(?:under|below|max(?:imum)?|for|with|from|on|to|by)\b|[,.!?]|$)",
     re.I,
 )
 PRICE_RE = re.compile(r"\b(?:under|below|max(?:imum)?)\s+(\d+(?:\.\d+)?)\b", re.I)
-OCC_RE   = re.compile(r"\bfor\s+(\d+)\s*(?:people|guests)?\b", re.I)
+OCC_RE = re.compile(r"\bfor\s+(\d+)\s*(?:people|guests)?\b", re.I)
+
 
 def router_node(state: GraphState) -> GraphState:
     text = (state.user_text or "").strip()

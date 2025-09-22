@@ -18,24 +18,28 @@ import uuid
 import requests
 
 DEFAULT_URL = os.environ.get("CHATBI_URL", "http://127.0.0.1:8000")
-CHAT_EP      = "/chat"
+CHAT_EP = "/chat"
+
 
 def ensure_utf8_console():
     """Try to force UTF-8 output on Windows consoles."""
     try:
         if os.name == "nt":
             import ctypes
+
             # Set output mode to UTF-8 code page 65001
             ctypes.windll.kernel32.SetConsoleOutputCP(65001)
             ctypes.windll.kernel32.SetConsoleCP(65001)
     except Exception:
         pass
 
+
 def parse_args():
     ap = argparse.ArgumentParser(description="Interactive Chatbi CLI")
     ap.add_argument("--sid", help="Session id (default random UUID)")
     ap.add_argument("--url", default=DEFAULT_URL, help="Base URL, default %(default)s")
     return ap.parse_args()
+
 
 def post_chat(base_url: str, sid: str, message: str) -> dict:
     url = base_url.rstrip("/") + CHAT_EP
@@ -47,6 +51,7 @@ def post_chat(base_url: str, sid: str, message: str) -> dict:
         return r.json()
     except requests.exceptions.RequestException as e:
         return {"error": str(e)}
+
 
 def format_reply(obj: dict) -> str:
     if not isinstance(obj, dict):
@@ -67,6 +72,7 @@ def format_reply(obj: dict) -> str:
         pass
     intent_tag = f" ({intent})" if intent else ""
     return f"{reply}{intent_tag}{cite}"
+
 
 def main():
     ensure_utf8_console()
@@ -110,6 +116,7 @@ def main():
 
         resp = post_chat(base_url, sid, send_text)
         print(format_reply(resp))
+
 
 if __name__ == "__main__":
     main()

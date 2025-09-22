@@ -5,6 +5,7 @@ from ..utils.schemas import RoomsQuery  # your existing schema
 
 repo = RoomsRepo()
 
+
 def rooms_node(state: GraphState) -> GraphState:
     try:
         q = RoomsQuery(
@@ -42,7 +43,9 @@ def rooms_node(state: GraphState) -> GraphState:
         state.answer = "Here are some options:\n" + "\n".join(bullets)
     else:
         # nicer UX: suggest the cheapest available for the same occupancy
-        cheapest = repo.search(city=q.city, max_price=None, occupancy=q.occupancy, topk=1)
+        cheapest = repo.search(
+            city=q.city, max_price=None, occupancy=q.occupancy, topk=1
+        )
         if cheapest:
             c = cheapest[0]
             state.answer = (

@@ -4,6 +4,7 @@ from sqlalchemy import cast, Numeric, func, String
 from ..db import get_session
 from ..models import RoomRate, Hotel
 
+
 class RoomsRepo:
     def search(
         self,
@@ -17,10 +18,12 @@ class RoomsRepo:
             # cast -> strip -> nullif -> cast back to NUMERIC
             price_expr = cast(
                 func.nullif(
-                    func.regexp_replace(cast(RoomRate.base_rate, String), r"[^0-9.]", "", "g"),
-                    ""
+                    func.regexp_replace(
+                        cast(RoomRate.base_rate, String), r"[^0-9.]", "", "g"
+                    ),
+                    "",
                 ),
-                Numeric
+                Numeric,
             )
 
             q = (
@@ -38,7 +41,9 @@ class RoomsRepo:
 
             results: List[dict] = []
             for rr, h, price_num in rows:
-                price_out = float(price_num) if price_num is not None else float(rr.base_rate)
+                price_out = (
+                    float(price_num) if price_num is not None else float(rr.base_rate)
+                )
                 results.append(
                     {
                         "hotel": h.name,
