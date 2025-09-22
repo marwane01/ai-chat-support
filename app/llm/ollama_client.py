@@ -1,5 +1,6 @@
 from __future__ import annotations
-import os, requests
+import os
+import requests
 from typing import List, Dict
 
 BASE = os.getenv("LLM_BASE_URL", "http://ollama:11434/v1")

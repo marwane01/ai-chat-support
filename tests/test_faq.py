@@ -1,6 +1,3 @@
-import requests
-
-
 def test_it_localizes_answer(client):
     r = client.post(
         "/chat", json={"message": "Quali sono gli orari di check-in?"}

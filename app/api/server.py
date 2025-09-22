@@ -14,6 +14,14 @@ from ..db import init_db
 from ..utils.pii import scrub_in, scrub_out, redact
 from ..utils.memory import get_slots, update_slots, get_history, append_history
 from ..utils.lang import detect_lang
+from app.repositories.booking_repo_pg import (
+    create_hold_pg,
+    confirm_hold_pg,
+    cancel_booking_pg,
+    get_booking_pg,
+    expire_holds_pg,
+)
+from app.utils.schemas import BookingRequest, ConfirmRequest, CancelRequest
 
 
 # --- Feature flags ---
@@ -34,16 +42,6 @@ app = FastAPI(title="Chatbi", default_response_class=ORJSONResponse)
 
 
 workflow = build_graph()
-
-# --- Booking imports ---
-from app.repositories.booking_repo_pg import (
-    create_hold_pg,
-    confirm_hold_pg,
-    cancel_booking_pg,
-    get_booking_pg,
-    expire_holds_pg,
-)
-from app.utils.schemas import BookingRequest, ConfirmRequest, CancelRequest
 
 
 # Router for booking

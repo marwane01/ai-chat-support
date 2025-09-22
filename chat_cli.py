@@ -11,9 +11,7 @@
 # - UTF-8 safe printing on Windows.
 
 import argparse
-import json
 import os
-import sys
 import uuid
 import requests
 

@@ -1,4 +1,5 @@
-﻿import os, json
+﻿import os
+import json
 from typing import List
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, VectorParams, PointStruct

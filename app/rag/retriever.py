@@ -74,9 +74,9 @@ def _build_filter(
     if category:
         must.append(FieldCondition(key="category", match=MatchValue(value=category)))
     if lang:
-        l = str(lang).strip().lower()
-        if l:
-            must.append(FieldCondition(key="lang", match=MatchValue(value=l)))
+        lang_norm = str(lang).strip().lower()
+        if lang_norm:
+            must.append(FieldCondition(key="lang", match=MatchValue(value=lang_norm)))
     return Filter(must=must) if must else None
 
 

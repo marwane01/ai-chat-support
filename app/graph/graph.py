@@ -8,6 +8,10 @@ from .nodes_rooms import rooms_node
 from .nodes_faq import faq_node
 from .nodes_fallback import fallback_node
 from .nodes_generator import generator_node  # NEW
+from app.utils.memory import get_slots, update_slots
+from app.utils.lang import detect_lang  # language detection
+
+_GRAPH = None
 
 
 # --- build graph ---
@@ -59,10 +63,6 @@ def build_graph():
 
 
 # --- memory-aware wrapper ---
-from app.utils.memory import get_slots, update_slots
-from app.utils.lang import detect_lang  # language detection
-
-_GRAPH = None
 
 
 def _get_graph():

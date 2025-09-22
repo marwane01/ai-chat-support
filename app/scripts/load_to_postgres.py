@@ -1,4 +1,6 @@
-import os, csv, json
+import os
+import csv
+import json
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 

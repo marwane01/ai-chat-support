@@ -1,7 +1,7 @@
 # app/utils/memory.py
 import os
 import json
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, List
 import redis
 
 # --- Slot memory (structured fields) ---

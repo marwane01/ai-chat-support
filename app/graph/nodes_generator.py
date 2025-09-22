@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 
 from .state import GraphState
 from ..llm.ollama_client import chat

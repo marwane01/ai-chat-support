@@ -1,4 +1,6 @@
-import os, json, sys, math
+import os
+import json
+import sys
 from pathlib import Path
 from typing import List, Dict, Any
 
@@ -155,7 +157,7 @@ def upsert_pgvector(items: List[Dict[str, Any]]):
                 # upsert vectors
                 conn.execute(
                     text(
-                        f"""
+                        """
                     INSERT INTO faqs_vec (id, embedding)
                     VALUES (:id, :embedding)
                     ON CONFLICT (id) DO UPDATE SET embedding = EXCLUDED.embedding
